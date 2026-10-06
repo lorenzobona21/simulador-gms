@@ -65,6 +65,9 @@ async function getLatestInvestors(): Promise<{
   ]);
   const dailyStatus = await readDailyPositionStatus();
   const subscriptionStore = filterSubscriptionStoreToAllowlist(rawSubscriptionStore);
+  const bonaAccountCodes = myClientCodes.length > 0
+    ? myClientCodes
+    : Object.keys(subscriptionStore?.accounts ?? {}).map(normalizeClientCode);
   const statementsByCode = new Map(
     (report?.statements ?? []).map(statement => [
       normalizeClientCode(statement.positions[0]?.accountCode),
@@ -72,7 +75,7 @@ async function getLatestInvestors(): Promise<{
     ])
   );
 
-  const investors = myClientCodes.map(accountCode => {
+  const investors = bonaAccountCodes.map(accountCode => {
       const statement = statementsByCode.get(accountCode);
       const subscriptionSummary = subscriptionStore?.accounts[accountCode];
       const activeSubscriptions =
