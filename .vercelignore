@@ -1,0 +1,14 @@
+.env
+.env.*
+!.env.example
+.next
+node_modules
+tmp
+outputs
+work
+data/*
+!data/my-client-codes.json
+transfer-from-2026-06-19
+.agents
+.codex
+.git

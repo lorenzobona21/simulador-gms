@@ -1,0 +1,48 @@
+{
+  "name": "gms-client-platform-allowlist",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Plataforma GMS limitada a allowlist oficial de clientes.",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "test": "node --test src/**/*.test.ts",
+    "netfactor:robot": "node scripts/run-netfactor-robot.mjs",
+    "netfactor:robot:visible": "node scripts/run-netfactor-robot.mjs --visible",
+    "netfactor:daily-position": "node scripts/sync-netfactor-daily-position.mjs --confirm-netfactor",
+    "netfactor:sync": "node scripts/sync-netfactor-report.mjs",
+    "netfactor:subscriptions": "node scripts/sync-netfactor-subscriptions.mjs",
+    "netfactor:subscriptions:on-demand": "node scripts/sync-netfactor-subscriptions.mjs",
+    "netfactor:subscriptions:base": "node scripts/sync-netfactor-subscriptions-batch.mjs",
+    "netfactor:subscriptions:batch": "node scripts/sync-netfactor-subscriptions-batch.mjs",
+    "netfactor:subscriptions:pilot": "node scripts/sync-netfactor-subscriptions-batch.mjs --pilot",
+    "netfactor:monthly-detailed": "node scripts/sync-netfactor-monthly-detailed-subscriptions.mjs",
+    "vercel:upload-monthly-detailed": "node scripts/upload-monthly-detailed-to-site.mjs",
+    "netfactor:parse-subscriptions": "node scripts/parse-netfactor-subscriptions.mjs",
+    "netfactor:import-subscriptions": "node scripts/import-netfactor-subscriptions-text.mjs",
+    "data:audit": "node scripts/audit-data-quality.mjs",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@sparticuz/chromium": "^149.0.0",
+    "@vercel/blob": "^2.5.0",
+    "next": "^16.0.0",
+    "pdfjs-dist": "^5.4.54",
+    "playwright": "^1.56.0",
+    "playwright-core": "^1.61.0",
+    "puppeteer-core": "^25.2.1",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "typescript": "^5.8.0"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
