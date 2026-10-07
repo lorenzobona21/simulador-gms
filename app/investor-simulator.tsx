@@ -157,8 +157,8 @@ export function InvestorSimulator({
     crmReturnUrl: searchParams.get("crmReturnUrl") ?? ""
   };
   const hasAppliedCrmContext = useRef(false);
-  const [simulationMode, setSimulationMode] = useState<"general" | "bonas" | "prospect">("bonas");
-  const [selectedClientId, setSelectedClientId] = useState(investors[0]?.clientId ?? "");
+  const [simulationMode, setSimulationMode] = useState<"general" | "bonas" | "prospect">(investors.length ? "bonas" : "general");
+  const [selectedClientId, setSelectedClientId] = useState(investors[0]?.clientId ?? generalInvestors[0]?.clientId ?? "");
   const [sortMode, setSortMode] = useState<"name" | "balance">("name");
   const [useCurrentBalance, setUseCurrentBalance] = useState(true);
   const [prospectName, setProspectName] = useState("");
@@ -601,8 +601,8 @@ export function InvestorSimulator({
   }
 
   function resetScenario() {
-    setSimulationMode("bonas");
-    setSelectedClientId(investors[0]?.clientId ?? "");
+    setSimulationMode(investors.length ? "bonas" : "general");
+    setSelectedClientId(investors[0]?.clientId ?? generalInvestors[0]?.clientId ?? "");
     setSortMode("name");
     setUseCurrentBalance(true);
     setProspectName("");
@@ -618,7 +618,7 @@ export function InvestorSimulator({
     setMonthlyReportMessage("");
   }
 
-  if (!investors.length) {
+  if (!investors.length && !generalInvestors.length) {
     return (
       <section className="panel simulator-panel" id="live-simulator">
         <div className="panel-title">

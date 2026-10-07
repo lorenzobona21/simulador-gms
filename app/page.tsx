@@ -65,9 +65,9 @@ async function getLatestInvestors(): Promise<{
   ]);
   const dailyStatus = await readDailyPositionStatus();
   const subscriptionStore = filterSubscriptionStoreToAllowlist(rawSubscriptionStore);
-  const bonaAccountCodes = myClientCodes.length > 0
+  const bonaAccountCodes = subscriptionStore?.classificationSource !== "crm" && myClientCodes.length > 0
     ? myClientCodes
-    : Object.keys(subscriptionStore?.accounts ?? {}).map(normalizeClientCode);
+    : Object.keys(subscriptionStore?.accounts ?? {});
   const statementsByCode = new Map(
     (report?.statements ?? []).map(statement => [
       normalizeClientCode(statement.positions[0]?.accountCode),
@@ -94,7 +94,7 @@ async function getLatestInvestors(): Promise<{
       return {
         clientId: `netfactor_${accountCode}`,
         clientName: statement?.clientName ?? subscriptionSummary?.clientName ?? accountCode,
-        accountCode,
+        accountCode: accountCode.startsWith("doc:") ? "" : accountCode,
         balanceDate: statement?.positions[0]?.balanceDate ?? "",
         currentBalance,
         dailyPositionBalance: positionBalance,

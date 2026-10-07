@@ -16,6 +16,7 @@ export type InvestorSubscriptionSummary = {
 export type InvestorSubscriptionStore = {
   syncedAt: string;
   positionDate?: string;
+  classificationSource?: "crm";
   accounts: Record<string, InvestorSubscriptionSummary>;
 };
 
@@ -44,9 +45,13 @@ export async function readInvestorSubscriptionStore(): Promise<InvestorSubscript
   return JSON.parse(contents) as InvestorSubscriptionStore;
 }
 
-export async function saveInvestorSubscriptionStore(store: InvestorSubscriptionStore) {
+export async function saveInvestorSubscriptionStore(store: InvestorSubscriptionStore, allowedClientCodes?: readonly string[]) {
+  if (Object.keys(store.accounts).length === 0) {
+    throw new Error("A importacao nao encontrou clientes Bona. A base anterior foi preservada.");
+  }
+  const allowed = allowedClientCodes ? new Set(allowedClientCodes) : undefined;
   for (const accountCode of Object.keys(store.accounts)) {
-    if (!isAllowedClientCode(accountCode)) {
+    if (allowed ? !allowed.has(accountCode) : !isAllowedClientCode(accountCode)) {
       throw new Error(`Account ${accountCode} is outside data/my-client-codes.json.`);
     }
   }

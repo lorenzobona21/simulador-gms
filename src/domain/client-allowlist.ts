@@ -71,6 +71,7 @@ export function filterInvestorReportToAllowlist(report: InvestorReportSyncResult
 
 export function filterSubscriptionStoreToAllowlist(store?: InvestorSubscriptionStore) {
   if (!store) return undefined;
+  if (store.classificationSource === "crm") return store;
   if (myClientCodes.length === 0) return store;
 
   return {

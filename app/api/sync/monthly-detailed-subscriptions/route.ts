@@ -6,7 +6,8 @@ import {
   importMonthlyDetailedSubscriptionsFromPdfData
 } from "@/src/integrations/netfactor-monthly-detailed-subscriptions";
 import { readGeneralInvestorSubscriptionStore, saveGeneralInvestorSubscriptionStore } from "@/src/integrations/general-investor-subscription-store";
-import { readInvestorSubscriptionStore } from "@/src/integrations/investor-subscription-store";
+import { readInvestorSubscriptionStore, saveInvestorSubscriptionStore } from "@/src/integrations/investor-subscription-store";
+import { buildCrmBonaStore, parseCrmBonaClients } from "@/src/integrations/crm-bona-classification";
 import { calculateCustodyMovements, saveLatestCustodyMovementSummary } from "@/src/integrations/custody-movement-store";
 import { canUseRemoteJsonStore } from "@/src/integrations/remote-json-store";
 import { listMonthlyCustodyAccounts } from "@/src/integrations/monthly-custody-account-summary";
@@ -46,6 +47,27 @@ export async function POST(request: Request) {
   try {
     const formData = await request.formData();
     const file = formData.get("report") ?? formData.get("file");
+    const bonaClientsValue = formData.get("bonaClients");
+    const bonaClients = typeof bonaClientsValue === "string"
+      ? parseCrmBonaClients(JSON.parse(bonaClientsValue))
+      : undefined;
+
+    if (formData.get("reclassifyOnly") === "true") {
+      if (!bonaClients) throw new Error("Envie a classificacao atual do CRM.");
+      const currentGeneral = await readGeneralInvestorSubscriptionStore();
+      if (!currentGeneral) throw new Error("Nenhum extrato geral salvo para recuperar a base Bona.");
+      const recovered = buildCrmBonaStore(currentGeneral, bonaClients);
+      await saveInvestorSubscriptionStore(recovered, bonaClients.map((client) => client.accountCode));
+      const recoveredAccounts = Object.values(recovered.accounts);
+      return NextResponse.json({
+        ok: true,
+        imported: recoveredAccounts.length,
+        activeClients: recoveredAccounts.filter((account) => account.subscriptions.some((item) => !item.isRedeemed && item.currentValue > 0)).length,
+        totalBalance: recoveredAccounts.reduce((sum, account) => sum + account.totalCurrentValue, 0),
+        positionDate: recovered.positionDate,
+        classificationSource: recovered.classificationSource
+      });
+    }
 
     if (!(file instanceof File)) {
       return NextResponse.json(
@@ -68,6 +90,9 @@ export async function POST(request: Request) {
       readGeneralInvestorSubscriptionStore().catch(() => undefined),
       readInvestorSubscriptionStore().catch(() => undefined)
     ]);
+    const classification = bonaClients ?? (previousBonaStore?.classificationSource === "crm"
+      ? Object.values(previousBonaStore.accounts).map(({ accountCode, clientName }) => ({ accountCode, clientName }))
+      : undefined);
     let uploadPath: string | undefined;
 
     if (process.env.VERCEL !== "1") {
@@ -77,8 +102,19 @@ export async function POST(request: Request) {
       await writeFile(uploadPath, bytes);
     }
 
-    const result = await importMonthlyDetailedSubscriptionsFromPdfData(new Uint8Array(bytes), { positionDate });
     const generalStore = await extractGeneralInvestorSubscriptionsFromPdfData(new Uint8Array(bytes), { positionDate });
+    let result;
+    if (classification) {
+      const classifiedStore = buildCrmBonaStore(generalStore, classification);
+      await saveInvestorSubscriptionStore(classifiedStore, classification.map((client) => client.accountCode));
+      result = {
+        ok: true,
+        imported: Object.keys(classifiedStore.accounts).length,
+        skipped: Object.keys(generalStore.accounts).length - Object.keys(classifiedStore.accounts).length
+      };
+    } else {
+      result = await importMonthlyDetailedSubscriptionsFromPdfData(new Uint8Array(bytes), { positionDate });
+    }
     const generalOutputPath = await saveGeneralInvestorSubscriptionStore(generalStore);
     const bonaStore = await readInvestorSubscriptionStore().catch(() => undefined);
     const generalMovements = calculateCustodyMovements(previousGeneralStore, generalStore, referenceMonth);

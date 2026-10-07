@@ -4,7 +4,7 @@ import {
   saveInvestorSubscriptionStore,
   type InvestorSubscriptionSummary
 } from "./investor-subscription-store.ts";
-import { isAllowedClientCode, normalizeClientCode } from "../domain/client-allowlist.ts";
+import { myClientCodes, normalizeClientCode } from "../domain/client-allowlist.ts";
 
 type PdfTextItem = {
   text: string;
@@ -306,7 +306,7 @@ async function buildNameToCodeMap() {
   try {
     const store = await readInvestorSubscriptionStore();
     for (const [accountCode, summary] of Object.entries(store.accounts ?? {})) {
-      if (accountCode && summary.clientName) nameToCode.set(normalizeName(summary.clientName), normalizeClientCode(accountCode));
+      if (/^\d+$/.test(accountCode) && summary.clientName) nameToCode.set(normalizeName(summary.clientName), normalizeClientCode(accountCode));
     }
   } catch {
     // A missing previous store is fine for a first import.
@@ -321,6 +321,13 @@ export async function importMonthlyDetailedSubscriptionsFromPdfData(
 ): Promise<MonthlyDetailedImportResult> {
   const dryRun = Boolean(options.dryRun);
   const positionDate = options.positionDate;
+  const allowedClientCodes = myClientCodes;
+  const allowedClientCodeSet = new Set(allowedClientCodes.map(normalizeClientCode).filter(Boolean));
+  const isAllowedClientCode = (value: unknown) => allowedClientCodeSet.has(normalizeClientCode(value));
+
+  if (!dryRun && allowedClientCodeSet.size === 0) {
+    throw new Error("A classificacao de clientes Bona nao foi recebida. A base atual foi preservada.");
+  }
   const nameToCode = await buildNameToCodeMap();
   const pages = await extractPages(pdfData);
   const parsedPages: ParsedPage[] = [];
